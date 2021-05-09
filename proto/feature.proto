@@ -1,0 +1,51 @@
+syntax = "proto3";
+option go_package="./proto/feature";
+
+package feature;
+
+service Features {
+    rpc DeleteFeature(DeleteFeatureRequest) returns (DeleteFeatureResponse) {};
+    rpc GetFeature(GetFeatureRequest) returns (GetFeatureResponse) {};
+    rpc GetFeatures(GetFeaturesRequest) returns (GetFeaturesResponse) {};
+    rpc SetFeature(SetFeatureRequest) returns (SetFeatureResponse) {};
+}
+
+message Feature {
+    string name = 1;
+    bool enabled = 2;
+}
+
+message DeleteFeatureRequest {
+    string name = 1;
+}
+
+message DeleteFeatureResponse {
+    // Feature is the deleted feature, or nil if there was no such feature.
+    Feature feature = 1;
+}
+
+message GetFeatureRequest {
+    string name = 1;
+}
+
+message GetFeatureResponse {
+    Feature feature = 1;
+}
+
+message GetFeaturesRequest {
+    bool names_only = 1;
+}
+
+message GetFeaturesResponse {
+    repeated Feature features = 1;
+    repeated string names = 2;
+}
+
+message SetFeatureRequest {
+    Feature feature = 1;
+}
+
+message SetFeatureResponse {
+    Feature before = 1;
+    Feature after = 2;
+}
