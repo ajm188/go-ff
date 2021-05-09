@@ -14,7 +14,9 @@ import (
 )
 
 var (
-	addr    string
+	addr       string
+	configPath string
+
 	rootCmd = &cobra.Command{
 		RunE:          serve,
 		SilenceErrors: true,
@@ -22,6 +24,12 @@ var (
 )
 
 func serve(cmd *cobra.Command, args []string) error {
+	if configPath != "" {
+		if err := feature.InitFromFile(configPath); err != nil {
+			return err
+		}
+	}
+
 	s := grpc.NewServer()
 	feature.RegisterServer(s)
 
@@ -53,6 +61,7 @@ func serve(cmd *cobra.Command, args []string) error {
 
 func init() {
 	rootCmd.Flags().StringVar(&addr, "addr", ":15000", "address to listen on")
+	rootCmd.Flags().StringVarP(&configPath, "config", "c", "", "path to feature flag config file")
 }
 
 func main() {

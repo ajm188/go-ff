@@ -11,8 +11,26 @@ service Features {
 }
 
 message Feature {
+    enum Type {
+        UNKNOWN = 0;
+        CONSTANT = 1;
+        PERCENTAGE_BASED = 2;
+        EXPRESSION = 3;
+    }
+
     string name = 1;
-    bool enabled = 2;
+    Type type = 2;
+
+    // Enabled is a constant on/off state for this feature. This is used for
+    // CONSTANT type features.
+    bool enabled = 3;
+    // Percentage is an unsigned integer in [0, 100], used for PERCENTAGE_BASED
+    // features.
+    uint32 percentage = 4;
+    // Expression is a string expression that will be evaluated to determine
+    // whether the feature should be enabled or disabled for a given
+    // request/etc. This is used for EXPRESSION type features.
+    string expression = 5;
 }
 
 message DeleteFeatureRequest {

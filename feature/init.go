@@ -5,11 +5,11 @@ import (
 	"io/ioutil"
 )
 
-func Init(m map[string]bool) {
+func Init(m map[string]*Feature) {
 	inst.m.Lock()
 	defer inst.m.Unlock()
 
-	inst.features = make(map[string]bool, len(m))
+	inst.features = make(map[string]*Feature, len(m))
 
 	for k, v := range m {
 		inst.features[k] = v

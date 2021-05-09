@@ -1,0 +1,17 @@
+{
+  "bar": {
+    "name": "bar",
+    "type": "PERCENTAGE_BASED",
+    "percentage": 10
+  },
+  "baz": {
+    "name": "baz",
+    "type": "EXPRESSION",
+    "expression": "1 > 0"
+  },
+  "foo": {
+    "name": "foo",
+    "type": "CONSTANT",
+    "enabled": true
+  }
+}

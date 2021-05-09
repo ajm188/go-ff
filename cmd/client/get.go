@@ -1,11 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/spf13/cobra"
 
+	"github.com/ajm188/goff/feature"
 	featurepb "github.com/ajm188/goff/proto/feature"
 )
 
@@ -18,7 +20,7 @@ var (
 		SilenceUsage: true,
 	}
 	getFeaturesCmd = &cobra.Command{
-		Use:          "list [--name-only]",
+		Use:          "list [--name-only] [-j|--json]",
 		Aliases:      []string{"get-features", "list-all"},
 		Args:         cobra.NoArgs,
 		RunE:         getFeatures,
@@ -40,6 +42,7 @@ func getFeature(cmd *cobra.Command, args []string) error {
 
 var getFeaturesOptions = struct {
 	NamesOnly bool
+	UseJSON   bool
 }{}
 
 func getFeatures(cmd *cobra.Command, args []string) error {
@@ -51,7 +54,27 @@ func getFeatures(cmd *cobra.Command, args []string) error {
 	}
 
 	if getFeaturesOptions.NamesOnly {
+		if getFeaturesOptions.UseJSON {
+			data, err := json.Marshal(resp.Names)
+			if err != nil {
+				return err
+			}
+
+			fmt.Printf("%s\n", data)
+			return nil
+		}
+
 		fmt.Printf("%s\n", strings.Join(resp.Names, "\n"))
+		return nil
+	}
+
+	if getFeaturesOptions.UseJSON {
+		data, err := json.Marshal(feature.MapFromProtos(resp.Features))
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("%s\n", data)
 		return nil
 	}
 
@@ -67,6 +90,7 @@ func getFeatures(cmd *cobra.Command, args []string) error {
 func init() {
 	rootCmd.AddCommand(getFeatureCmd)
 
-	getFeatureCmd.Flags().BoolVar(&getFeaturesOptions.NamesOnly, "name-only", false, "show feature names only")
+	getFeaturesCmd.Flags().BoolVar(&getFeaturesOptions.NamesOnly, "name-only", false, "show feature names only")
+	getFeaturesCmd.Flags().BoolVarP(&getFeaturesOptions.UseJSON, "json", "j", false, "output features as JSON")
 	rootCmd.AddCommand(getFeaturesCmd)
 }

@@ -5,14 +5,16 @@ import (
 	"fmt"
 	"sync"
 
-	featurepb "github.com/ajm188/goff/proto/feature"
+	"github.com/golang/protobuf/proto"
 	"google.golang.org/grpc"
+
+	featurepb "github.com/ajm188/goff/proto/feature"
 )
 
 var (
 	// Global singleton.
 	inst = &server{
-		features: map[string]bool{},
+		features: map[string]*Feature{},
 	}
 
 	_ featurepb.FeaturesServer = (*server)(nil)
@@ -20,7 +22,7 @@ var (
 
 type server struct {
 	m        sync.RWMutex
-	features map[string]bool
+	features map[string]*Feature
 }
 
 // DeleteFeature is part of the featurepb.FeaturesServer interface.
@@ -32,10 +34,7 @@ func (s *server) DeleteFeature(ctx context.Context, req *featurepb.DeleteFeature
 		delete(s.features, req.Name)
 
 		return &featurepb.DeleteFeatureResponse{
-			Feature: &featurepb.Feature{
-				Name:    req.Name,
-				Enabled: feat,
-			},
+			Feature: feat.Feature,
 		}, nil
 	}
 
@@ -49,10 +48,7 @@ func (s *server) GetFeature(ctx context.Context, req *featurepb.GetFeatureReques
 
 	if feat, ok := s.features[req.Name]; ok {
 		return &featurepb.GetFeatureResponse{
-			Feature: &featurepb.Feature{
-				Name:    req.Name,
-				Enabled: feat,
-			},
+			Feature: feat.Feature,
 		}, nil
 	}
 
@@ -77,10 +73,7 @@ func (s *server) GetFeatures(ctx context.Context, req *featurepb.GetFeaturesRequ
 		names = append(names, name)
 
 		if !req.NamesOnly {
-			features = append(features, &featurepb.Feature{
-				Name:    name,
-				Enabled: feat,
-			})
+			features = append(features, feat.Feature)
 		}
 	}
 
@@ -97,20 +90,20 @@ func (s *server) SetFeature(ctx context.Context, req *featurepb.SetFeatureReques
 
 	var (
 		before *featurepb.Feature
-		after  = &featurepb.Feature{
-			Name:    req.Feature.Name,
-			Enabled: req.Feature.Enabled,
-		}
+		after  = proto.Clone(req.Feature).(*featurepb.Feature)
 	)
 
 	if feat, ok := s.features[req.Feature.Name]; ok {
-		before = &featurepb.Feature{
-			Name:    req.Feature.Name,
-			Enabled: feat,
+		before = feat.Feature
+	}
+
+	if after.Type == featurepb.Feature_PERCENTAGE_BASED {
+		if after.Percentage < 0 || after.Percentage > 100 {
+			return nil, fmt.Errorf("%w percentage must be in [0, 100]; have %d", ErrInvalidFeature, after.Percentage)
 		}
 	}
 
-	s.features[req.Feature.Name] = after.Enabled
+	s.features[req.Feature.Name] = &Feature{Feature: after}
 	return &featurepb.SetFeatureResponse{
 		Before: before,
 		After:  after,
