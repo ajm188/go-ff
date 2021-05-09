@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 
-	"github.com/ajm188/goff/feature"
+	"github.com/ajm188/go-ff/feature"
 )
 
 var (

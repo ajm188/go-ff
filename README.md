@@ -1,4 +1,4 @@
-# goff
+# go-ff
 
 Feature flags in Go, backed by a grpc service.
 

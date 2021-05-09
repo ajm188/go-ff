@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	featurepb "github.com/ajm188/goff/proto/feature"
+	featurepb "github.com/ajm188/go-ff/proto/feature"
 )
 
 var deleteFeatureCmd = &cobra.Command{

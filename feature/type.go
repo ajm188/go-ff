@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	featurepb "github.com/ajm188/goff/proto/feature"
+	featurepb "github.com/ajm188/go-ff/proto/feature"
 )
 
 // ParseType converts a string into a featurepb.Feature_Type enum, returning an

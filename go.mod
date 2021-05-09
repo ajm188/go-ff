@@ -1,4 +1,4 @@
-module github.com/ajm188/goff
+module github.com/ajm188/go-ff
 
 go 1.16
 

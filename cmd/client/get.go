@@ -7,8 +7,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/ajm188/goff/feature"
-	featurepb "github.com/ajm188/goff/proto/feature"
+	"github.com/ajm188/go-ff/feature"
+	featurepb "github.com/ajm188/go-ff/proto/feature"
 )
 
 var (

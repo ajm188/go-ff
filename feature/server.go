@@ -8,7 +8,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"google.golang.org/grpc"
 
-	featurepb "github.com/ajm188/goff/proto/feature"
+	featurepb "github.com/ajm188/go-ff/proto/feature"
 )
 
 var (
