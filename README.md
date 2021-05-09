@@ -19,18 +19,83 @@ Surely not a bad idea.
 1. In a second tab, enable, disable, and remove features.
 
 ```
-$ ./client.bin set foo true
-$ ./client.bin set bar false
-$ ./client.bin list-all
+$ ./client.bin set foo constant --enabled
+$ ./client.bin set bar percentage_based -p10
+$ ./client.bin set baz expression -e"1 > 0"
+$ ./client.bin list
 foo:true
 bar:false
-$ ./client.bin set foo false
-$ ./client.bin delete bar
-deleted feature bar:false
-$ ./client.bin delete baz
-no such feature baz
-$ ./client.bin list-all
-foo:false
+baz:false
+$ ./client.bin list -j | jq '.'
+{
+  "bar": {
+    "name": "bar",
+    "type": "PERCENTAGE_BASED",
+    "percentage": 10
+  },
+  "baz": {
+    "name": "baz",
+    "type": "EXPRESSION",
+    "expression": "1 > 0"
+  },
+  "foo": {
+    "name": "foo",
+    "type": "CONSTANT",
+    "enabled": true
+  }
+}
+$ ./client.bin delete foo
+deleted feature bar:true
+$ ./client.bin delete qux
+no such feature qux
+$ ./client.bin list -j | jq '.'
+{
+  "bar": {
+    "name": "bar",
+    "type": "PERCENTAGE_BASED",
+    "percentage": 10
+  },
+  "baz": {
+    "name": "baz",
+    "type": "EXPRESSION",
+    "expression": "1 > 0"
+  }
+}
+```
+
+### Persistence
+
+The feature server stores feature state in memory (for now). To get a modicum
+of persistence, you can use the client to dump out a JSON representation of the
+feature map, and then use that file when restarting the server.
+
+For example:
+
+```
+prompt1> $ ./server.bin
+prompt2> $ ./client.bin set foo constant --enabled
+prompt2> $ ./client.bin set bar percentage_based -p10
+prompt2> $ ./client.bin set baz expression -e"1 > 0"
+prompt2> $ ./client.bin list -j > feature_flags.json
+prompt1> $ ./server.bin --config feature_flags.json
+prompt2> $ ./client.bin list -j
+{
+  "bar": {
+    "name": "bar",
+    "type": "PERCENTAGE_BASED",
+    "percentage": 10
+  },
+  "baz": {
+    "name": "baz",
+    "type": "EXPRESSION",
+    "expression": "1 > 0"
+  },
+  "foo": {
+    "name": "foo",
+    "type": "CONSTANT",
+    "enabled": true
+  }
+}
 ```
 
 ## Development
