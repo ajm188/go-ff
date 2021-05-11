@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 
@@ -16,6 +17,7 @@ import (
 
 var (
 	addr       string
+	httpAddr   string
 	configPath string
 
 	rootCmd = &cobra.Command{
@@ -62,12 +64,20 @@ func serve(cmd *cobra.Command, args []string) error {
 		done <- s.Serve(lis)
 	}()
 
+	if httpAddr != "" {
+		go func() {
+			http.HandleFunc("/", feature.Index)
+			done <- http.ListenAndServe(httpAddr, nil)
+		}()
+	}
+
 	log.Print(<-done)
 	s.GracefulStop()
 	return nil
 }
 
 func init() {
+	rootCmd.Flags().StringVar(&httpAddr, "http-addr", ":8080", "address to serve http on")
 	rootCmd.Flags().StringVar(&addr, "addr", ":15000", "address to listen on")
 	rootCmd.Flags().StringVarP(&configPath, "config", "c", "", "path to feature flag config file")
 }

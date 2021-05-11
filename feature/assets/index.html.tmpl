@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+    <head></head>
+    <body>
+        <main>
+            <div class="container">
+                <h1>Features</h1>
+                <table>
+                    <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>Type</th>
+                        <th>Settings</th>
+                    </tr>
+                    {{ range .Features }}
+                    <tr>
+                        <td>{{ .Name }}</td>
+                        <td>TODO Description goes here</td>
+                        <td>{{ featureTypeToString .Type }}</td>
+                        <td>{{ featureSettings . }}</td>
+                    </tr>
+                    {{ end }}
+                </table>
+            </div>
+        </main>
+    </body>
+</html>

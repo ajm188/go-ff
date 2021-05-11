@@ -2,8 +2,12 @@ package feature
 
 import (
 	"context"
+	"embed"
 	"fmt"
+	"net/http"
+	"strings"
 	"sync"
+	"text/template"
 
 	"github.com/golang/protobuf/proto"
 	"google.golang.org/grpc"
@@ -132,4 +136,62 @@ func (s *server) SetFeature(ctx context.Context, req *featurepb.SetFeatureReques
 // server.
 func RegisterServer(s *grpc.Server) {
 	featurepb.RegisterFeaturesServer(s, inst)
+}
+
+var (
+	//go:embed assets
+	assets embed.FS
+
+	indexTmpl *template.Template
+)
+
+func Index(w http.ResponseWriter, r *http.Request) {
+	if indexTmpl == nil {
+		data, err := assets.ReadFile("assets/index.html.tmpl")
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
+		indexTmpl, err = template.New("index").Funcs(map[string]interface{}{
+			"featureTypeToString": func(ftype featurepb.Feature_Type) string {
+				name, ok := featurepb.Feature_Type_name[int32(ftype)]
+				if !ok {
+					return "unknown"
+				}
+
+				return strings.ToLower(name)
+			},
+			"featureSettings": func(feat *featurepb.Feature) string {
+				switch feat.Type {
+				case featurepb.Feature_CONSTANT:
+					if feat.Enabled {
+						return "on"
+					} else {
+						return "off"
+					}
+				case featurepb.Feature_PERCENTAGE_BASED:
+					return fmt.Sprintf("%d%%", feat.Percentage)
+				case featurepb.Feature_EXPRESSION:
+					return feat.Expression
+				}
+
+				return ""
+			},
+		}).Parse(string(data))
+		if err != nil {
+			indexTmpl = nil
+
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
+	}
+
+	resp, _ := inst.GetFeatures(r.Context(), &featurepb.GetFeaturesRequest{})
+	if err := indexTmpl.Execute(w, resp); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+	}
 }
