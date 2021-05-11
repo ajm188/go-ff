@@ -2,7 +2,6 @@ package feature
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -126,15 +125,12 @@ func (f *Feature) parseExpression() (err error) {
 
 // Get returns whether a feature is enabled or not.
 func Get(name string, parameters map[string]interface{}) (bool, error) {
-	resp, err := inst.GetFeature(context.Background(), &featurepb.GetFeatureRequest{Name: name})
+	feat, err := inst.getFeature(name)
 	if err != nil {
 		return false, err
 	}
 
-	// TODO: provide a shared method for accessing the feature map (in a
-	// concurrent-safe manner) so we can re-use the Feature structs (which
-	// would amortize the cost of expression parsing).
-	return (&Feature{Feature: resp.Feature}).IsEnabledForParameters(parameters)
+	return feat.IsEnabledForParameters(parameters)
 }
 
 // MapFromProtos converts a slice of protobuf Features to a map of feature name

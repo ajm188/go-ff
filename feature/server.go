@@ -43,16 +43,27 @@ func (s *server) DeleteFeature(ctx context.Context, req *featurepb.DeleteFeature
 
 // GetFeature is part of the featurepb.FeaturesServer interface.
 func (s *server) GetFeature(ctx context.Context, req *featurepb.GetFeatureRequest) (*featurepb.GetFeatureResponse, error) {
+	feat, err := s.getFeature(req.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	return &featurepb.GetFeatureResponse{
+		Feature: feat.Feature,
+	}, nil
+}
+
+// getFeature separates the concurrent-safe Feature lookup from the gRPC service
+// implementation so this can be reused by the package-level Get function.
+func (s *server) getFeature(name string) (*Feature, error) {
 	s.m.RLock()
 	defer s.m.RUnlock()
 
-	if feat, ok := s.features[req.Name]; ok {
-		return &featurepb.GetFeatureResponse{
-			Feature: feat.Feature,
-		}, nil
+	if feat, ok := s.features[name]; ok {
+		return feat, nil
 	}
 
-	return nil, fmt.Errorf("%w with name %s", ErrNoFeature, req.Name)
+	return nil, fmt.Errorf("%w with name %s", ErrNoFeature, name)
 }
 
 // GetFeatures is part of the featurepb.FeaturesServer interface.
