@@ -97,13 +97,20 @@ func (s *server) SetFeature(ctx context.Context, req *featurepb.SetFeatureReques
 		before = feat.Feature
 	}
 
-	if after.Type == featurepb.Feature_PERCENTAGE_BASED {
-		if after.Percentage < 0 || after.Percentage > 100 {
-			return nil, fmt.Errorf("%w percentage must be in [0, 100]; have %d", ErrInvalidFeature, after.Percentage)
+	f := &Feature{Feature: after}
+
+	switch f.Type {
+	case featurepb.Feature_PERCENTAGE_BASED:
+		if f.Percentage < 0 || f.Percentage > 100 {
+			return nil, fmt.Errorf("%w percentage must be in [0, 100]; have %d", ErrInvalidFeature, f.Percentage)
+		}
+	case featurepb.Feature_EXPRESSION:
+		if err := f.parseExpression(); err != nil {
+			return nil, fmt.Errorf("could not parse expression %s: %w", f.Expression, err)
 		}
 	}
 
-	s.features[req.Feature.Name] = &Feature{Feature: after}
+	s.features[req.Feature.Name] = f
 	return &featurepb.SetFeatureResponse{
 		Before: before,
 		After:  after,
