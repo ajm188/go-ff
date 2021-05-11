@@ -31,6 +31,10 @@ message Feature {
     // whether the feature should be enabled or disabled for a given
     // request/etc. This is used for EXPRESSION type features.
     string expression = 5;
+
+    // Description is a human-readable description of what this feature flag
+    // is for.
+    string description = 6;
 }
 
 message DeleteFeatureRequest {

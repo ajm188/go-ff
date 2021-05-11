@@ -34,6 +34,7 @@ func setFeature(cmd *cobra.Command, args []string) error {
 }
 
 func init() {
+	setFeatureCmd.Flags().StringVarP(&setFeatureOptions.Description, "description", "d", "", "description of the feature")
 	setFeatureCmd.Flags().BoolVar(&setFeatureOptions.Enabled, "enabled", false, "enable this feature. only used for type=CONSTANT")
 	setFeatureCmd.Flags().Uint32VarP(&setFeatureOptions.Percentage, "percentage", "p", 0, "percentage [0, 100] of requests for which the feature should be enabled. only used for type=PERCENTAGE_BASED")
 	setFeatureCmd.Flags().StringVarP(&setFeatureOptions.Expression, "expression", "e", "", "govaluate expression string. only used for type=EXPRESSION")
