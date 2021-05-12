@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	"github.com/ajm188/go-ff/feature"
@@ -8,8 +10,8 @@ import (
 )
 
 var setFeatureCmd = &cobra.Command{
-	Use:          "set feature-name type",
-	Args:         cobra.ExactArgs(2),
+	Use:          "set feature-name [type]",
+	Args:         cobra.RangeArgs(1, 2),
 	RunE:         setFeature,
 	SilenceUsage: false,
 }
@@ -17,18 +19,83 @@ var setFeatureCmd = &cobra.Command{
 var setFeatureOptions featurepb.Feature
 
 func setFeature(cmd *cobra.Command, args []string) error {
-	t, err := feature.ParseType(cmd.Flags().Arg(1))
-	if err != nil {
-		return err
+	var (
+		t        *featurepb.Feature_Type
+		typeName string
+	)
+
+	if cmd.Flags().NArg() > 1 {
+		typeName = cmd.Flags().Arg(1)
+		_t, err := feature.ParseType(typeName)
+		if err != nil {
+			return err
+		}
+
+		t = &_t
 	}
 
 	cmd.SilenceUsage = true
 
-	setFeatureOptions.Type = t
-	setFeatureOptions.Name = cmd.Flags().Arg(0)
+	resp, err := client.GetFeature(ctx, &featurepb.GetFeatureRequest{
+		Name: cmd.Flags().Arg(0),
+	})
+	if err != nil {
+		return err
+	}
+
+	feat := resp.Feature
+
+	if cmd.Flags().Changed("description") {
+		feat.Description = setFeatureOptions.Description
+	}
+
+	if cmd.Flags().Changed("enabled") {
+		feat.Enabled = setFeatureOptions.Enabled
+	}
+
+	if cmd.Flags().Changed("percentage") {
+		feat.Percentage = setFeatureOptions.Percentage
+	}
+
+	if cmd.Flags().Changed("expression") {
+		feat.Expression = setFeatureOptions.Expression
+	}
+
+	if t != nil {
+		cmd.SilenceUsage = false
+
+		switch *t {
+		case featurepb.Feature_CONSTANT:
+			if cmd.Flags().Changed("percentage") {
+				return fmt.Errorf("--percentage is incompatible with feature type %s", typeName)
+			}
+
+			if cmd.Flags().Changed("expression") {
+				return fmt.Errorf("--expression is incompatible with feature type %s", typeName)
+			}
+		case featurepb.Feature_PERCENTAGE_BASED:
+			if cmd.Flags().Changed("enabled") {
+				return fmt.Errorf("--enabled is incompatible with feature type %s", typeName)
+			}
+
+			if cmd.Flags().Changed("expression") {
+				return fmt.Errorf("--expression is incompatible with feature type %s", typeName)
+			}
+		case featurepb.Feature_EXPRESSION:
+			if cmd.Flags().Changed("enabled") {
+				return fmt.Errorf("--enabled is incompatible with feature type %s", typeName)
+			}
+
+			if cmd.Flags().Changed("percentage") {
+				return fmt.Errorf("--percentage is incompatible with feature type %s", typeName)
+			}
+		}
+
+		cmd.SilenceUsage = true
+	}
 
 	_, err = client.SetFeature(ctx, &featurepb.SetFeatureRequest{
-		Feature: &setFeatureOptions,
+		Feature: feat,
 	})
 	return err
 }
