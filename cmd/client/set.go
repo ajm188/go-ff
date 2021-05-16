@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -35,11 +37,29 @@ func setFeature(cmd *cobra.Command, args []string) error {
 	}
 
 	cmd.SilenceUsage = true
+	name := cmd.Flags().Arg(0)
 
 	resp, err := client.GetFeature(ctx, &featurepb.GetFeatureRequest{
-		Name: cmd.Flags().Arg(0),
+		Name: name,
 	})
 	if err != nil {
+		// Note: we cannot use errors.Is here because we're getting back a gRPC
+		// error, which does not wrap the error returned by our server
+		// implementation.
+		if strings.Contains(err.Error(), feature.ErrNoFeature.Error()) {
+			if t == nil {
+				cmd.SilenceUsage = false
+				return fmt.Errorf("no feature named %s, must specify a type", name)
+			}
+
+			log.Printf("no feature named %s, creating ...", name)
+			setFeatureOptions.Name = name
+			setFeatureOptions.Type = *t
+
+			_, err := client.SetFeature(ctx, &featurepb.SetFeatureRequest{Feature: &setFeatureOptions})
+			return err
+		}
+
 		return err
 	}
 
