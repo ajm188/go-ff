@@ -4,7 +4,11 @@ import (
 	"context"
 	"embed"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"net/http"
+	"os"
+	"path"
 	"strings"
 	"sync"
 	"text/template"
@@ -142,12 +146,32 @@ var (
 	//go:embed assets
 	assets embed.FS
 
-	indexTmpl *template.Template
+	indexTmpl     *template.Template
+	liveReloadDir string
 )
 
+func init() {
+	if v := os.Getenv("HTTP_LIVE_RELOAD_DIR"); v != "" {
+		log.Printf("using HTTP_LIVE_RELOAD_DIR %s", v)
+		liveReloadDir = v
+	}
+}
+
 func Index(w http.ResponseWriter, r *http.Request) {
-	if indexTmpl == nil {
-		data, err := assets.ReadFile("assets/index.html.tmpl")
+	if indexTmpl == nil || liveReloadDir != "" {
+		var (
+			data []byte
+			err  error
+		)
+		if liveReloadDir != "" {
+			data, err = ioutil.ReadFile(path.Join(liveReloadDir, "assets/index.html.tmpl"))
+			if err != nil {
+				err = fmt.Errorf("%w (HTTP_LIVE_RELOAD_DIR=%s)", err, liveReloadDir)
+			}
+		} else {
+			data, err = assets.ReadFile("assets/index.html.tmpl")
+		}
+
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
