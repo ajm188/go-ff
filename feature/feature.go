@@ -70,6 +70,27 @@ func (f *Feature) IsEnabledForParameters(parameters map[string]interface{}) (boo
 	return false, fmt.Errorf("%w %v for %s", ErrUnknownFeatureType, f.Type, f.Name)
 }
 
+func (f *Feature) Validate() (bool, error) {
+	switch f.Type {
+	case featurepb.Feature_CONSTANT:
+		return true, nil
+	case featurepb.Feature_PERCENTAGE_BASED:
+		if f.Percentage < 0 || f.Percentage > 100 {
+			return false, fmt.Errorf("%w: percentage must be in [0, 100] (got %d)", ErrInvalidFeature, f.Percentage)
+		}
+
+		return true, nil
+	case featurepb.Feature_EXPRESSION:
+		if f.Expression == "" {
+			return false, fmt.Errorf("%w: expression cannot be empty", ErrInvalidFeature)
+		}
+
+		return true, nil
+	}
+
+	return false, fmt.Errorf("%w: %v", ErrUnknownFeatureType, f.Type)
+}
+
 // MarshalJSON implements json.Marshaler for Feature. It marshals only the
 // underlying protobuf message.
 func (f *Feature) MarshalJSON() ([]byte, error) {

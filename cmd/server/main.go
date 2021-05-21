@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net"
@@ -25,7 +26,10 @@ var (
 
 func serve(cmd *cobra.Command, args []string) error {
 	if configPath != "" {
-		if err := feature.InitFromFile(configPath); err != nil {
+		watchCtx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		if err := feature.Watch(watchCtx, configPath); err != nil {
 			return err
 		}
 	}
