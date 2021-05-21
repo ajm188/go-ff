@@ -23,33 +23,49 @@ import (
 // The watch continues until the watcher closes either the Events or Errors
 // channels, or until the context is cancelled or expired.
 func Watch(ctx context.Context, path string) error {
+	path, err := filepath.Abs(path)
+	if err != nil {
+		return err
+	}
+
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return err
 	}
 
-	defer watcher.Close()
-
 	dir := filepath.Dir(path)
 	base := filepath.Base(path)
 
+	log.Printf("[watch] adding %s", dir)
 	if err := watcher.Add(dir); err != nil {
+		watcher.Close()
 		return err
 	}
 
 	go func() {
+		defer watcher.Close()
+
 		for {
 			select {
 			case <-ctx.Done():
+				log.Printf("[watch] context finished: %v", ctx.Err())
 				return
 			case event, ok := <-watcher.Events:
 				if !ok {
+					log.Print("[watch] events channel closed, stopping watch")
 					return
 				}
 
 				if filepath.Base(event.Name) != base {
 					continue
 				}
+
+				if event.Op&fsnotify.Write == 0 {
+					log.Printf("[watch] config touched but not written (op = %v), ignoring", event.Op)
+					continue
+				}
+
+				log.Print("[watch] detected config change. reloading ...")
 
 				if err := InitFromFile(event.Name); err != nil { // TODO: add noglog
 					// Purely for logging considerations, distinguish between
@@ -58,11 +74,14 @@ func Watch(ctx context.Context, path string) error {
 					if errors.Is(err, ErrInvalidFeature) || errors.Is(err, ErrUnknownFeatureType) {
 						log.Printf("error reloading config from %s: %v", event.Name, err)
 					} else {
-						log.Printf("error reloading config %v", err)
+						log.Printf("error reloading config: %v", err)
 					}
 				}
+
+				log.Print("[watch] reloaded config")
 			case err, ok := <-watcher.Errors:
 				if !ok {
+					log.Print("[watch] errors channel closed, stopping watch")
 					return
 				}
 

@@ -26,6 +26,10 @@ var (
 
 func serve(cmd *cobra.Command, args []string) error {
 	if configPath != "" {
+		if err := feature.InitFromFile(configPath); err != nil {
+			log.Fatal(err)
+		}
+
 		watchCtx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
