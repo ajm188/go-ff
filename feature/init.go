@@ -13,14 +13,13 @@ func Init(m map[string]*Feature) {
 	inst.m.Lock()
 	defer inst.m.Unlock()
 
-	inst.features = make(map[string]*Feature, len(m))
-
-	for k, v := range m {
-		inst.features[k] = v
-	}
+	initLocked(m)
 }
 
 func InitFromFile(path string) error {
+	inst.m.Lock()
+	defer inst.m.Unlock()
+
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		return err
@@ -48,6 +47,14 @@ func InitFromFile(path string) error {
 		}
 	}
 
-	Init(m)
+	initLocked(m)
 	return nil
+}
+
+func initLocked(m map[string]*Feature) {
+	inst.features = make(map[string]*Feature, len(m))
+
+	for k, v := range m {
+		inst.features[k] = v
+	}
 }
