@@ -5,11 +5,11 @@ import (
 	"io"
 )
 
-var (
-	leftAngle  = []byte("003c")
-	rightAngle = []byte("003e")
-	ampersand  = []byte("0026")
-)
+var escapeChars = map[byte]byte{
+	0x003c: '<',
+	0x003e: '>',
+	0x0026: '&',
+}
 
 type HTMLUnescaper struct {
 	buf    []byte
@@ -73,20 +73,13 @@ func (u *HTMLUnescaper) Read(b []byte) (int, error) {
 		}
 
 		sextet := u.buf[u.offset : u.offset+6]
-		switch 0 {
-		case bytes.Compare(sextet[2:], leftAngle):
-			b[i] = '<'
+		hexcode := sextet[2]<<3 | sextet[3]<<2 | sextet[4]<<1 | sextet[5]
+
+		if char, ok := escapeChars[hexcode]; ok {
+			b[i] = char
 			n++
 			u.offset += 6
-		case bytes.Compare(sextet[2:], rightAngle):
-			b[i] = '>'
-			n++
-			u.offset += 6
-		case bytes.Compare(sextet[2:], ampersand):
-			b[i] = '&'
-			n++
-			u.offset += 6
-		default:
+		} else {
 			// Best we can do is take a single byte and go to the beginning of
 			// the loop to rescan for the next potential escape sequence
 			b[i] = u.buf[u.offset]
