@@ -20,31 +20,28 @@ func TestHTMLUnescaper(t *testing.T) {
 			out: "trailing newline\n",
 		},
 		{
-			in:  "escaped \u003c",
+			in:  `escaped \u003c`,
 			out: "escaped <",
 		},
 		{
-			in:  "\u003c\u003e",
+			in:  `\u003c\u003e`,
 			out: "<>",
 		},
 		{
-			in:  "\u0010",
-			out: "\u0010",
+			in:  `\u0010`,
+			out: `\u0010`,
 		},
 	}
 
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.out, func(t *testing.T) {
+			e := NewHTMLUnescaper([]byte(tt.in))
 			buf := bytes.NewBuffer(nil)
-			buf.WriteString(tt.in)
+			io.Copy(buf, e)
 
-			e := NewHTMLUnescaper(buf.Bytes())
-			buf2 := bytes.NewBuffer(nil)
-			io.Copy(buf2, e)
-
-			out := buf2.String()
-			if out != tt.out {
+			out := buf.Bytes()
+			if bytes.Compare(out, []byte(tt.out)) != 0 {
 				t.Errorf("NewHTMLUnescaper(%s) got = %s want = %s", tt.in, out, tt.out)
 			}
 		})

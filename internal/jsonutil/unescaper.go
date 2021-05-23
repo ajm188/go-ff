@@ -5,10 +5,10 @@ import (
 	"io"
 )
 
-var escapeChars = map[byte]byte{
-	0x003c: '<',
-	0x003e: '>',
-	0x0026: '&',
+var escapeChars = map[string]byte{
+	"003c": '<',
+	"003e": '>',
+	"0026": '&',
 }
 
 type HTMLUnescaper struct {
@@ -73,7 +73,7 @@ func (u *HTMLUnescaper) Read(b []byte) (int, error) {
 		}
 
 		sextet := u.buf[u.offset : u.offset+6]
-		hexcode := sextet[2]<<3 | sextet[3]<<2 | sextet[4]<<1 | sextet[5]
+		hexcode := string(sextet[2:])
 
 		if char, ok := escapeChars[hexcode]; ok {
 			b[i] = char
