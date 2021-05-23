@@ -35,7 +35,7 @@ func (u *HTMLUnescaper) Read(b []byte) (int, error) {
 			x := copy(b[i:], u.buf[u.offset:])
 			n += x
 			u.offset += x
-			goto done
+			break
 		}
 
 		j := bytes.Index(u.buf[u.offset:], []byte(`\u`))
@@ -44,7 +44,7 @@ func (u *HTMLUnescaper) Read(b []byte) (int, error) {
 			x := copy(b[i:], u.buf[u.offset:])
 			n += x
 			u.offset += x
-			goto done
+			break
 		}
 
 		if j > 0 {
@@ -58,7 +58,7 @@ func (u *HTMLUnescaper) Read(b []byte) (int, error) {
 
 		if i >= len(b) {
 			// We've filled the destination buffer
-			goto done
+			break
 		}
 
 		if len(u.buf[u.offset:]) < 6 {
@@ -69,7 +69,7 @@ func (u *HTMLUnescaper) Read(b []byte) (int, error) {
 			x := copy(b[i:], u.buf[u.offset:])
 			n += x
 			u.offset += x
-			goto done
+			break
 		}
 
 		sextet := u.buf[u.offset : u.offset+6]
@@ -97,7 +97,6 @@ func (u *HTMLUnescaper) Read(b []byte) (int, error) {
 		i++
 	}
 
-done:
 	if u.offset >= len(u.buf) {
 		return n, io.EOF
 	}
