@@ -27,6 +27,20 @@ func listFiles(b *testing.B, dir string) []string {
 	return filenames
 }
 
+type buffer struct {
+	buf []byte
+}
+
+func (b *buffer) Read(d []byte) (n int, err error) {
+	n = copy(d, b.buf)
+
+	if n >= len(b.buf) {
+		err = io.EOF
+	}
+
+	return n, err
+}
+
 func BenchmarkHTMLUnescaper(b *testing.B) {
 	filenames := listFiles(b, "testdata")
 
@@ -61,6 +75,16 @@ func BenchmarkHTMLUnescaper(b *testing.B) {
 				for i := 0; i < b.N; i++ {
 					buf := bytes.NewBuffer(nil)
 					_, err := io.Copy(buf, bytes.NewBuffer(data2))
+					if err != nil {
+						b.Error(err)
+					}
+				}
+			})
+
+			b.Run("copy passthrough", func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					buf := bytes.NewBuffer(nil)
+					_, err := io.Copy(buf, &buffer{data})
 					if err != nil {
 						b.Error(err)
 					}
