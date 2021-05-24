@@ -60,7 +60,7 @@ func Watch(ctx context.Context, path string) error {
 					continue
 				}
 
-				if event.Op&fsnotify.Write == 0 {
+				if event.Op&(fsnotify.Write|fsnotify.Create) == 0 {
 					log.Printf("[watch] config touched but not written (op = %v), ignoring", event.Op)
 					continue
 				}
