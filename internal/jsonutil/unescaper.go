@@ -11,17 +11,28 @@ var escapeChars = map[string]byte{
 	"0026": '&',
 }
 
+// HTMLUnescaper provides an io.Reader implementation that does the inverse of
+// json.HTMLEscape as bytes are read off of it.
+//
+// N.B.: The current implementation only unescapes the <, >, and & characters.
+// The U+2028 and U+2029 characters remain escaped.
 type HTMLUnescaper struct {
 	buf    []byte
 	offset int
 }
 
+// NewHTMLUnescaper returns an HTMLUnescaper that unescapes bytes in buf when
+// read from. The HTMLUnescaper takes ownership of, but does not mutate, the
+// passed-in buffer; therefore callers may continue to use the original buffer
+// when they are finished using the unescaper.
 func NewHTMLUnescaper(buf []byte) *HTMLUnescaper {
 	return &HTMLUnescaper{
 		buf: buf,
 	}
 }
 
+// Read implements io.Reader, unescaping HTML-escaped characters as they are
+// read from the underlying buffer.
 func (u *HTMLUnescaper) Read(b []byte) (int, error) {
 	n := 0
 	i := 0
