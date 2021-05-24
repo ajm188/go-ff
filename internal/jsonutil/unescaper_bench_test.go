@@ -93,3 +93,56 @@ func BenchmarkHTMLUnescaper(b *testing.B) {
 		})
 	}
 }
+
+func BenchmarkHTMlUnescaperMarshal(b *testing.B) {
+	filenames := listFiles(b, "testdata")
+
+	for _, filename := range filenames {
+		b.Run(filename, func(b *testing.B) {
+			data, err := ioutil.ReadFile(filepath.Join("testdata", filename))
+			if err != nil {
+				b.Fatal(err)
+			}
+
+			var m []map[string]interface{}
+			if err := json.Unmarshal(data, &m); err != nil {
+				b.Fatal(err)
+			}
+
+			b.ResetTimer()
+
+			b.Run("json.Encode", func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					buf := bytes.NewBuffer(nil)
+					encoder := json.NewEncoder(buf)
+					encoder.SetEscapeHTML(false)
+
+					if err := encoder.Encode(m); err != nil {
+						b.Fatal(err)
+					}
+				}
+			})
+
+			b.Run("json.Marshal", func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					if _, err := json.Marshal(m); err != nil {
+						b.Fatal(err)
+					}
+				}
+			})
+
+			b.Run("HTMLUnescaper", func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					data, err := json.Marshal(m)
+					if err != nil {
+						b.Fatal(err)
+					}
+
+					if _, err := ioutil.ReadAll(NewHTMLUnescaper(data)); err != nil {
+						b.Fatal(err)
+					}
+				}
+			})
+		})
+	}
+}
