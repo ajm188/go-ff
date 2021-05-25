@@ -3,7 +3,9 @@ package feature
 import (
 	"context"
 	"fmt"
+	"log"
 	"sync"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 	"google.golang.org/grpc"
@@ -23,6 +25,7 @@ var (
 type server struct {
 	m        sync.RWMutex
 	features map[string]*Feature
+	modified chan time.Time
 }
 
 // DeleteFeature is part of the featurepb.FeaturesServer interface.
@@ -31,6 +34,7 @@ func (s *server) DeleteFeature(ctx context.Context, req *featurepb.DeleteFeature
 	defer s.m.Unlock()
 
 	if feat, ok := s.features[req.Name]; ok {
+		defer s.notifyChange()
 		delete(s.features, req.Name)
 
 		return &featurepb.DeleteFeatureResponse{
@@ -121,11 +125,25 @@ func (s *server) SetFeature(ctx context.Context, req *featurepb.SetFeatureReques
 		}
 	}
 
+	defer s.notifyChange()
+
 	s.features[req.Feature.Name] = f
 	return &featurepb.SetFeatureResponse{
 		Before: before,
 		After:  after,
 	}, nil
+}
+
+func (s *server) notifyChange() {
+	if s.modified == nil {
+		return
+	}
+
+	select {
+	case s.modified <- time.Now():
+	default:
+		log.Print("[watch] change channel full; file persistence should be covered by a queued update")
+	}
 }
 
 // RegisterServer adds the global feature server instance to the given gRPC

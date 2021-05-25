@@ -2,11 +2,27 @@ package feature
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"log"
+	"os"
 	"path/filepath"
+	"sync"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
+
+	"github.com/ajm188/go-ff/internal/jsonutil"
+)
+
+var (
+	watchM      sync.Mutex
+	watching    = false
+	watchedFile = ""
+
+	ErrDuplicateWatch = errors.New("watch already established")
 )
 
 // Watch watches the given path for changes and reloads the global feature
@@ -23,6 +39,13 @@ import (
 // The watch continues until the watcher closes either the Events or Errors
 // channels, or until the context is cancelled or expired.
 func Watch(ctx context.Context, path string) error {
+	watchM.Lock()
+	defer watchM.Unlock()
+
+	if watching {
+		return fmt.Errorf("%w on %s", ErrDuplicateWatch, watchedFile)
+	}
+
 	path, err := filepath.Abs(path)
 	if err != nil {
 		return err
@@ -42,6 +65,16 @@ func Watch(ctx context.Context, path string) error {
 		return err
 	}
 
+	inst.m.Lock()
+	// We use a channel buffer of 1 to allow set/delete calls to complete
+	// without blocking on channel send while still signaling that an update
+	// needs to happen at the watch loop's earliest convenience. Since we
+	// persist the entire feature map on a write-back, if 3 updates occurred
+	// (even though only the first one got sent to the channel), we will still
+	// persist all 3 updates.
+	inst.modified = make(chan time.Time, 1)
+	inst.m.Unlock()
+
 	go func() {
 		defer watcher.Close()
 
@@ -50,6 +83,10 @@ func Watch(ctx context.Context, path string) error {
 			case <-ctx.Done():
 				log.Printf("[watch] context finished: %v", ctx.Err())
 				return
+			case <-inst.modified:
+				if err := writeBack(); err != nil {
+					log.Printf("[watch] error writing back features: %s", err)
+				}
 			case event, ok := <-watcher.Events:
 				if !ok {
 					log.Print("[watch] events channel closed, stopping watch")
@@ -89,6 +126,34 @@ func Watch(ctx context.Context, path string) error {
 			}
 		}
 	}()
+
+	watching = true
+	watchedFile = path
+
+	return nil
+}
+
+func writeBack() error {
+	watchM.Lock() // needed because we are going to access watchedFile
+	defer watchM.Unlock()
+
+	inst.m.RLock()
+	defer inst.m.RUnlock()
+
+	data, err := json.MarshalIndent(&inst.features, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	f, err := os.OpenFile(watchedFile, os.O_TRUNC|os.O_RDWR, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	if _, err := io.Copy(f, jsonutil.NewHTMLUnescaper(append(data, '\n'))); err != nil {
+		return err
+	}
 
 	return nil
 }
