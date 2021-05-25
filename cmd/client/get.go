@@ -69,7 +69,12 @@ func getFeatures(cmd *cobra.Command, args []string) error {
 	}
 
 	if getFeaturesOptions.UseJSON {
-		data, err := json.Marshal(feature.MapFromProtos(resp.Features))
+		m := make(map[string]*feature.Feature, len(resp.Features))
+		for _, fpb := range resp.Features {
+			m[fpb.Name] = &feature.Feature{Feature: fpb}
+		}
+
+		data, err := json.Marshal(m)
 		if err != nil {
 			return err
 		}

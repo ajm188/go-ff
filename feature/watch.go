@@ -67,7 +67,7 @@ func Watch(ctx context.Context, path string) error {
 
 				log.Print("[watch] detected config change. reloading ...")
 
-				if err := InitFromFile(event.Name); err != nil { // TODO: add noglog
+				if err := InitFromFile(event.Name); err != nil {
 					// Purely for logging considerations, distinguish between
 					// errors that already contain the pathname vs those that
 					// don't.
@@ -85,7 +85,6 @@ func Watch(ctx context.Context, path string) error {
 					return
 				}
 
-				// TODO: add noglog
 				log.Printf("error watching %s: %v", dir, err)
 			}
 		}

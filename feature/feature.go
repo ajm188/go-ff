@@ -29,9 +29,6 @@ type Feature struct {
 // and an error was encountered during expression evaluation.
 //
 // This function is equivalent to calling f.IsEnabledForParameters(nil).
-//
-// TODO: consider swallowing expression errors and returning false (or,
-// user-defined catchall default).
 func (f *Feature) IsEnabled() (bool, error) {
 	return f.IsEnabledForParameters(nil)
 }
@@ -45,8 +42,6 @@ func (f *Feature) IsEnabledForParameters(parameters map[string]interface{}) (boo
 	case featurepb.Feature_CONSTANT:
 		return f.Enabled, nil
 	case featurepb.Feature_PERCENTAGE_BASED:
-		// TODO: use a rand.Source, and provide a way for users to seed this
-		// randomness.
 		n := rand.Intn(100)
 		return uint32(n) < f.Percentage, nil
 	case featurepb.Feature_EXPRESSION:
@@ -137,9 +132,6 @@ func (f *Feature) parseExpression() (err error) {
 		return nil
 	}
 
-	// TODO: switch to NewEvaluableExpressionWithFunctions, provide a "standard"
-	// set of functions for all EXPRESSION features, and _maybe_ allow users
-	// to provide their own.
 	f.expr, err = govaluate.NewEvaluableExpression(f.Expression)
 	return err
 }
@@ -152,19 +144,4 @@ func Get(name string, parameters map[string]interface{}) (bool, error) {
 	}
 
 	return feat.IsEnabledForParameters(parameters)
-}
-
-// MapFromProtos converts a slice of protobuf Features to a map of feature name
-// to Feature.
-//
-// TODO: this function name is clunky, come up with a better one.
-func MapFromProtos(featurepbs []*featurepb.Feature) map[string]*Feature {
-	results := make(map[string]*Feature, len(featurepbs))
-	for _, fpb := range featurepbs {
-		results[fpb.Name] = &Feature{
-			Feature: fpb,
-		}
-	}
-
-	return results
 }
