@@ -1,42 +1,104 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
     <head>
+        <title>Features</title> 
+
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-      
-        <link rel="stylesheet" href="https://unpkg.com/@blaze/css@9.2.0/dist/blaze/blaze.css">
+
+        <style>
+            :root {
+                --fontSizeDefault: 1.4rem;
+                --fontSizeSmall: 1.2rem;
+                --tablePadding: 0.8rem 1.6rem;
+            }
+
+            html {
+                font-size: 62.5%; /* 1rem = 10px */
+            }
+
+            body {
+                color: #222;
+                font-family: -apple-system, system-ui, "Segoe UI", "Liberation Sans", sans-serif;
+                font-size: var(--fontSizeDefault);
+                line-height: 1.8;
+            }
+
+            h1 {
+                padding: var(--tablePadding);
+            }
+
+            .container {
+                margin: 0 auto;
+                max-width: 960px;
+            }
+
+            .meta {
+                color: #6f6f6f;
+                font-size: var(--fontSizeSmall);
+            }
+            
+            .no-break {
+                word-break: keep-all !important;
+            }
+
+            .table {
+                border-collapse: collapse;
+                table-layout: fixed;
+                width: 100%;
+            }
+
+            .table th {
+                font-size: var(--fontSizeSmall);
+                padding: var(--tablePadding);
+                text-align: left;
+            }
+
+            .table tbody tr {
+                border: solid 1px #edf2f7;
+                border-left: none;
+                border-right: none;
+            }
+
+            .table tbody tr:hover {
+                background: #f8fafd;
+            }
+
+            .table tbody td {
+                padding: var(--tablePadding);
+                vertical-align: top;
+                word-break: break-word;
+            }
+        </style>
     </head>
-    <body class="c-text">
-        <main class="o-container o-container--xlarge">
-            <h1 class="c-heading">Features</h1>
-            <table class="c-table">
-                <thead class="c-table__head">
-                    <tr class="c-table__row c-table__row--heading">
-                        <th class="c-table__cell">Name</th>
-                        <th class="c-table__cell">Description</th>
-                        <th class="c-table__cell">Type</th>
-                        <th class="c-table__cell">Settings</th>
+
+    <body>
+        <main class="container">
+        
+            <h1>Features</h1>
+
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th width="50%">Name</th>
+                        <th>Type</th>
+                        <th>Settings</th>
                     </tr>
                 </thead>
-                <tbody class="c-table__body">
+                <tbody>
                     {{ range .Features -}}
-                    <tr class="c-table__row">
-                        <td class="c-table__cell">{{ .Name }}</td>
-                        <td class="c-table__cell">{{ .Description }}</td>
-                        <td class="c-table__cell">{{ featureTypeToString .Type }}</td>
-                        <td class="c-table__cell">{{ featureSettings . }}</td>
+                    <tr>
+                        <td>
+                            {{ .Name }}
+                            <div class="meta">{{ .Description }}</div>
+                        </td>
+                        <td>{{ featureTypeToString .Type }}</td>
+                        <td class="no-break">{{ featureSettings . }}</td>
                     </tr>
                     {{- end }}
                 </tbody>
             </table>
         </main>
-        <footer>
-                <nav class="c-nav c-nav--inline">
-                    <span class="c-nav__item">One</span>
-                    <span class="c-nav__item">Two</span>
-                    <span class="c-nav__item c-nav__item--right">Three</span>
-                </nav>
-        </footer>
     </body>
 </html>
